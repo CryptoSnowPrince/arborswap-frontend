@@ -36,14 +36,26 @@ const config: (t: ContextApi['t']) => MenuEntry[] = (t) => [
     href: '/pools',
   },
 
+  // added
+  {
+    label: t('Airdropper'),
+    icon: 'MoreIcon',
+    items: [
+      {
+        label: t('Airdrops'),
+        href: '/airdrops'
+      },
+      {
+        label: t('Create Airdrop'),
+        href: '/create-airdrop'
+      },
+    ],
+  },
+
   {
     label: t('More Products'),
     icon: 'MoreIcon',
     items: [
-      // {
-      //   label: t('Launchpad'),
-      //   href: '#1',
-      // },
       {
         label: t('Locker'),
         href: 'http://lock.arborswap.org/',
@@ -53,7 +65,7 @@ const config: (t: ContextApi['t']) => MenuEntry[] = (t) => [
         href: 'http://airdrop.arborswap.org/',
       },
     ],
-  },
+  }
 ]
 
 export default config
