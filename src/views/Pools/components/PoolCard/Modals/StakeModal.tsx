@@ -13,6 +13,9 @@ import {
   CalculateIcon,
   IconButton,
 } from '@arborswap/uikit'
+
+import dayjs from 'dayjs'
+
 import { useTranslation } from 'contexts/Localization'
 import useTheme from 'hooks/useTheme'
 import useToast from 'hooks/useToast'
@@ -39,7 +42,20 @@ const StyledLink = styled(Link)`
   width: 100%;
 `
 
+const AnnualRoiContainer = styled(Flex)`
+  cursor: pointer;
+`
+
+const AnnualRoiDisplay = styled(Text)`
+  width: 72px;
+  max-width: 72px;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+`
+
 const StakeModal: React.FC<StakeModalProps> = ({
+  isBnbPool,
   pool,
   stakingTokenBalance,
   stakingTokenPrice,
@@ -49,8 +65,8 @@ const StakeModal: React.FC<StakeModalProps> = ({
   const { sousId, stakingToken, earningTokenPrice, apr, userData, earningToken } = pool
   const { t } = useTranslation()
   const { theme } = useTheme()
-  const { onStake } = useStakePool(sousId)
-  const { onUnstake } = useUnstakePool(sousId)
+  const { onStake } = useStakePool(sousId, isBnbPool)
+  const { onUnstake } = useUnstakePool(sousId, pool.enableEmergencyWithdraw)
   const { toastSuccess, toastError } = useToast()
   const [pendingTx, setPendingTx] = useState(false)
   const [stakeAmount, setStakeAmount] = useState('')
@@ -63,6 +79,14 @@ const StakeModal: React.FC<StakeModalProps> = ({
 
   const usdValueStaked = new BigNumber(stakeAmount).times(stakingTokenPrice)
   const formattedUsdValueStaked = !usdValueStaked.isNaN() && formatNumber(usdValueStaked.toNumber())
+
+  const interestBreakdown = getInterestBreakdown({
+    principalInUSD: !usdValueStaked.isNaN() ? usdValueStaked.toNumber() : 0,
+    apr,
+    earningTokenPrice,
+  })
+  const annualRoi = interestBreakdown[3] * pool.earningTokenPrice
+  const formattedAnnualRoi = formatNumber(annualRoi, annualRoi > 10000 ? 0 : 2, annualRoi > 10000 ? 0 : 2)
 
   const getTokenLink = stakingToken.address ? `/swap?outputCurrency=${getAddress(stakingToken.address)}` : '/swap'
 
@@ -144,6 +168,10 @@ const StakeModal: React.FC<StakeModalProps> = ({
     )
   }
 
+  const unlockDate = dayjs().add(pool.lockTime, 'day').format('YYYY-MM-DD')
+  // console.log(`unlockDate`, unlockDate)
+  // console.log(`pool`, pool)
+
   return (
     <Modal
       minWidth="346px"
@@ -155,7 +183,9 @@ const StakeModal: React.FC<StakeModalProps> = ({
         <Text bold>{isRemovingStake ? t('Unstake') : t('Stake')}:</Text>
         <Flex alignItems="center" minWidth="70px">
           <Image
-            src={`/images/tokens/${getAddress(stakingToken.address)}.png`}
+            src={`https://raw.githubusercontent.com/wongjapan/arbor-assets/master/images/${getAddress(
+              stakingToken.address,
+            )}.png`}
             width={24}
             height={24}
             alt={stakingToken.symbol}
@@ -192,6 +222,21 @@ const StakeModal: React.FC<StakeModalProps> = ({
         <PercentageButton onClick={() => handleChangePercent(75)}>75%</PercentageButton>
         <PercentageButton onClick={() => handleChangePercent(100)}>{t('Max')}</PercentageButton>
       </Flex>
+      {!isRemovingStake && pool.isLock ? (
+        <Flex
+          background="#F5F1EB"
+          borderRadius="6px"
+          padding="20px"
+          alignItems="center"
+          justifyContent="space-between"
+          mt="20px"
+        >
+          <Text bold>Unlock Date:</Text>
+          <Text bold>{pool.lockInfo ? pool.lockInfo : unlockDate}</Text>
+        </Flex>
+      ) : (
+        <></>
+      )}
 
       <Button
         isLoading={pendingTx}

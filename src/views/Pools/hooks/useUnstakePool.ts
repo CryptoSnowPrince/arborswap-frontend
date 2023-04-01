@@ -3,7 +3,8 @@ import { useWeb3React } from '@web3-react/core'
 import BigNumber from 'bignumber.js'
 import { useAppDispatch } from 'state'
 import { updateUserStakedBalance, updateUserBalance, updateUserPendingReward } from 'state/actions'
-import { useSousChef } from 'hooks/useContract'
+import { unstakeFarm } from 'utils/calls'
+import { useMasterchef, useSousChef } from 'hooks/useContract'
 import { BIG_TEN } from 'utils/bigNumber'
 import getGasPrice from 'utils/getGasPrice'
 
@@ -16,7 +17,14 @@ const sousUnstake = async (sousChefContract, amount, decimals) => {
   return receipt.status
 }
 
-const useUnstakePool = (sousId: number) => {
+const sousEmergencyUnstake = async (sousChefContract) => {
+  const gasPrice = getGasPrice()
+  const tx = await sousChefContract.emergencyWithdraw({ gasPrice })
+  const receipt = await tx.wait()
+  return receipt.status
+}
+
+const useUnstakePool = (sousId, enableEmergencyWithdraw = false) => {
   const dispatch = useAppDispatch()
   const { account } = useWeb3React()
   const sousChefContract = useSousChef(sousId)
